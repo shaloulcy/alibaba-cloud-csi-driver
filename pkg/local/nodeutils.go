@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // include normal lvm & aep lvm type
@@ -54,7 +55,7 @@ func (ns *nodeServer) mountLvm(ctx context.Context, req *csi.NodePublishVolumeRe
 	if _, ok := req.VolumeContext[NodeAffinity]; ok {
 		nodeAffinity = req.VolumeContext[NodeAffinity]
 	}
-	log.Infof("NodePublishVolume: Starting to mount lvm at path: %s, with vg: %s, with volume: %s, PV Type: %s, LVM Type: %s, NodeAffinty: %s", targetPath, vgName, req.GetVolumeId(), pvType, lvmType, nodeAffinity)
+	log.Infof("NodePublishVolume: Starting to mount lvm at path: %s, with vg: %s, with volume: %s, PV Type: %s, LVM Type: %s, NodeAffinty: %s %v", targetPath, vgName, req.GetVolumeId(), pvType, lvmType, nodeAffinity, time.Now())
 
 	// Create LVM if not exist
 	//volumeNewCreated := false
@@ -93,12 +94,14 @@ func (ns *nodeServer) mountLvm(ctx context.Context, req *csi.NodePublishVolumeRe
 		mountFlags := req.GetVolumeCapability().GetMount().GetMountFlags()
 		options = append(options, mountFlags...)
 
+		start := time.Now()
+		log.Infof("NodePublishVolume:: start mount format devicePath: %s, targetPath: %s, %v", devicePath, targetPath, time.Now())
 		diskMounter := &k8smount.SafeFormatAndMount{Interface: ns.k8smounter, Exec: utilexec.New()}
 		if err := diskMounter.FormatAndMount(devicePath, targetPath, fsType, options); err != nil {
 			log.Errorf("NodeStageVolume: Volume: %s, Device: %s, FormatAndMount error: %s", req.VolumeId, devicePath, err.Error())
 			return status.Error(codes.Internal, err.Error())
 		}
-		log.Infof("NodePublishVolume:: mount successful devicePath: %s, targetPath: %s, options: %v", devicePath, targetPath, options)
+		log.Infof("NodePublishVolume:: took %v  mount successful devicePath: %s, targetPath: %s, options: %v %v", time.Since(start), devicePath, targetPath, options, time.Now())
 	}
 
 	// Set volume IO Limit
@@ -148,7 +151,7 @@ func (ns *nodeServer) mountLvm(ctx context.Context, req *csi.NodePublishVolumeRe
 				log.Errorf("NodePublishVolume: Patch Volume(%s) Error: %s", volumeID, err.Error())
 				return status.Error(codes.Internal, err.Error())
 			}
-			log.Infof("NodePublishVolume: upgrade Persistent Volume(%s) with nodeAffinity: %s", volumeID, ns.nodeID)
+			log.Infof("NodePublishVolume: upgrade Persistent Volume(%s) with nodeAffinity: %s %v", volumeID, ns.nodeID, time.Now())
 		}
 	}
 	return nil

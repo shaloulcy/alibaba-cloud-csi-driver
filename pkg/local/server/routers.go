@@ -17,6 +17,8 @@ limitations under the License.
 package server
 
 import (
+	"time"
+
 	"github.com/kubernetes-sigs/alibaba-cloud-csi-driver/pkg/local/lib"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -42,7 +44,11 @@ func NewProjQuotaServer() ProjQuotaServer {
 
 // ListLV list lvm volume
 func (s Server) ListLV(ctx context.Context, in *lib.ListLVRequest) (*lib.ListLVReply, error) {
-	log.Infof("List LVM for vg: %s", in.VolumeGroup)
+	start := time.Now()
+	defer func() {
+		log.Infof("List LVM for vg: %s, took: %v", in.VolumeGroup, time.Since(start))
+	}()
+	log.Infof("List LVM for vg: %s %v", in.VolumeGroup, time.Now())
 	lvs, err := ListLV(in.VolumeGroup)
 	if err != nil {
 		log.Errorf("List LVM with error: %s", err.Error())
@@ -53,31 +59,39 @@ func (s Server) ListLV(ctx context.Context, in *lib.ListLVRequest) (*lib.ListLVR
 	for i, v := range lvs {
 		pblvs[i] = v.ToProto()
 	}
-	log.Infof("List LVM Successful with result: %+v", pblvs)
+	log.Infof("List LVM Successful with result: %+v %v", pblvs, time.Now())
 	return &lib.ListLVReply{Volumes: pblvs}, nil
 }
 
 // CreateLV create lvm volume
 func (s Server) CreateLV(ctx context.Context, in *lib.CreateLVRequest) (*lib.CreateLVReply, error) {
-	log.Infof("Create LVM with: %+v", in)
+	start := time.Now()
+	defer func() {
+		log.Infof("Create LVM with: %v , took: %v", in.Name, time.Since(start))
+	}()
+	log.Infof("Create LVM with: %+v %v", in, time.Now())
 	out, err := CreateLV(ctx, in.VolumeGroup, in.Name, in.Size, in.Mirrors, in.Tags, in.Striping)
 	if err != nil {
 		log.Errorf("Create LVM with error: %s", err.Error())
 		return nil, status.Errorf(codes.Internal, "failed to create lv: %v", err)
 	}
-	log.Infof("Create LVM Successful with result: %+v", out)
+	log.Infof("Create LVM Successful with result: %+v %v", out, time.Now())
 	return &lib.CreateLVReply{CommandOutput: out}, nil
 }
 
 // RemoveLV remove lvm volume
 func (s Server) RemoveLV(ctx context.Context, in *lib.RemoveLVRequest) (*lib.RemoveLVReply, error) {
-	log.Infof("Remove LVM with: %+v", in)
+	start := time.Now()
+	defer func() {
+		log.Infof("Remove LVM with: %v , took: %v", in.Name, time.Since(start))
+	}()
+	log.Infof("Remove LVM with: %+v %v", in, time.Now())
 	out, err := RemoveLV(ctx, in.VolumeGroup, in.Name)
 	if err != nil {
 		log.Errorf("Remove LVM with error: %s", err.Error())
 		return nil, status.Errorf(codes.Internal, "failed to remove lv: %v", err)
 	}
-	log.Infof("Remove LVM Successful with result: %+v", out)
+	log.Infof("Remove LVM Successful with result: %+v %v", out, time.Now())
 	return &lib.RemoveLVReply{CommandOutput: out}, nil
 }
 

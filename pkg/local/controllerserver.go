@@ -153,7 +153,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 		storageSelected = value
 	}
 	// Log inputs
-	log.Infof("Starting to Create %s volume %s with: pvcName(%s), pvcNameSpace(%s), nodeSelected(%s), storageSelected(%s)", volumeType, volumeID, pvcName, pvcNameSpace, nodeSelected, storageSelected)
+	log.Infof("Starting to Create %s volume %s with: pvcName(%s), pvcNameSpace(%s), nodeSelected(%s), storageSelected(%s) %v", volumeType, volumeID, pvcName, pvcNameSpace, nodeSelected, storageSelected, time.Now())
 
 	// Schedule lvm volume Info
 	paraList := map[string]string{}
@@ -167,7 +167,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 				log.Errorf("CreateVolume: lvm all scheduled volume %s with error: %s", volumeID, err.Error())
 				return nil, status.Error(codes.InvalidArgument, "Parse lvm all schedule info error "+err.Error())
 			}
-			log.Infof("CreateVolume: lvm scheduled with %s, %s", nodeSelected, storageSelected)
+			log.Infof("CreateVolume: lvm scheduled with %s, %s %v", nodeSelected, storageSelected, time.Now())
 		} else if nodeSelected != "" {
 			paraList, err = lvmPartScheduled(nodeSelected, pvcName, pvcNameSpace, parameters)
 			if err != nil {
@@ -177,7 +177,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 			if value, ok := paraList[VgNameTag]; ok && value != "" {
 				storageSelected = value
 			}
-			log.Infof("CreateVolume: lvm part scheduled with %s, %s", nodeSelected, storageSelected)
+			log.Infof("CreateVolume: lvm part scheduled volume %s with %s, %s %v", volumeID, nodeSelected, storageSelected, time.Now())
 		} else {
 			nodeID := ""
 			nodeID, paraList, err = lvmNoScheduled(parameters)
@@ -189,7 +189,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 			if value, ok := paraList[VgNameTag]; ok && value != "" {
 				storageSelected = value
 			}
-			log.Infof("CreateVolume: lvm no scheduled with %s, %s", nodeSelected, storageSelected)
+			log.Infof("CreateVolume: lvm no scheduled volume %s with %s, %s %v", volumeID, nodeSelected, storageSelected, time.Now())
 		}
 
 		// if vgName configed in storageclass, use it first;
@@ -219,12 +219,12 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 					log.Errorf("CreateVolume: Create lvm %s/%s, options: %v with error: %s", storageSelected, volumeID, options, err.Error())
 					return nil, errors.New("Create Lvm with error " + err.Error())
 				}
-				log.Infof("CreateLvm: Successful Create lvm %s/%s in node %s with response %s", storageSelected, volumeID, nodeSelected, outstr)
+				log.Infof("CreateLvm: Successful Create lvm %s/%s in node %s with response %s %v", storageSelected, volumeID, nodeSelected, outstr, time.Now())
 			} else if err != nil {
 				log.Errorf("CreateVolume: Get lvm %s from node %s with error: %s", req.Name, nodeSelected, err.Error())
 				return nil, err
 			} else {
-				log.Infof("CreateVolume: lvm volume already created %s at node %s", req.Name, nodeSelected)
+				log.Infof("CreateVolume: lvm volume already created %s at node %s %v", req.Name, nodeSelected, time.Now())
 			}
 		} else if !types.GlobalConfigVar.GrpcProvision && nodeSelected != "" && storageSelected != "" {
 			createLabels := map[string]string{}
@@ -239,7 +239,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 				log.Errorf("CreateVolume: create volume with label for volume %s %s at node %s error: %s", req.Name, storageSelected, nodeSelected, err.Error())
 				return nil, err
 			}
-			log.Infof("CreateVolume: Successful create lvm volume without GRPC %s/%s at node %s", storageSelected, req.Name, nodeSelected)
+			log.Infof("CreateVolume: Successful create lvm volume without GRPC %s/%s at node %s %v", storageSelected, req.Name, nodeSelected, time.Now())
 		}
 	case MountPointType:
 		var err error
@@ -414,7 +414,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 	}
 
 	createdVolumeMap[req.Name] = response.Volume
-	log.Infof("Success create Volume: %s, Size: %d, Parameters: %v", volumeID, req.GetCapacityRange().GetRequiredBytes(), response.Volume)
+	log.Infof("Success create Volume: %s, Size: %d, Parameters: %v %v", volumeID, req.GetCapacityRange().GetRequiredBytes(), response.Volume, time.Now())
 	return response, nil
 }
 
